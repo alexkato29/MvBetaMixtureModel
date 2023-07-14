@@ -1,3 +1,4 @@
+import time
 import h5py
 import numpy as np
 from scipy.stats import beta
@@ -18,6 +19,7 @@ class MVBetaMM:
         self.weights_ = None
         self.params_ = None
 
+
     def _loglikelihood(self, X):
         """
         Returns the log likelihood of each mixture for each observation in X
@@ -35,6 +37,7 @@ class MVBetaMM:
                                                self.params_[i, self.n_components:]),
                                   axis=1) + np.log(self.weights_[i])
         return loglik
+
 
     def fit(self, X, max_iter=100, tol=1e-5):
         """
@@ -61,19 +64,19 @@ class MVBetaMM:
         X_means = np.array([X[labels == i].mean(axis=0) for i in range(self.n_mixtures)])
         X_vars = np.array([X[labels == i].var(axis=0) for i in range(self.n_mixtures)])
         common_factor = X_means * (1 - X_means) / X_vars - 1
-        self.params_[i, :self.n_components] = common_factor * X_means  # alphas
-        self.params_[i, self.n_components:] = common_factor * (1 - X_means)  # betas 
+        self.params_[:, :self.n_components] = common_factor * X_means  # alphas
+        self.params_[:, self.n_components:] = common_factor * (1 - X_means)  # betas
 
         loglik = self._loglikelihood(X)
         old_loglik = loglik.sum()
 
         for iter in range(max_iter):
-            # E-step
+            # E-step (slow operation)
             loglik -= logsumexp(loglik, axis=1)[:, np.newaxis]  # Normalizes each loglik value for each observation
             responsibilities = np.exp(loglik)  # exponentiaties to get probabilities
             self.weights_ = responsibilities.mean(axis=0)
 
-            # M-step
+            # M-step (quick operation)
             for i in range(self.n_mixtures):
                 resp = responsibilities[:, i]
                 weighted_sum = np.sum(resp[:, np.newaxis] * X, axis=0)
@@ -88,8 +91,10 @@ class MVBetaMM:
                 self.params_[i, :self.n_components] = common_factor * weighted_mean
                 self.params_[i, self.n_components:] = common_factor * (1 - weighted_mean)
 
+            # Update log likelihood (slow operation)
             loglik = self._loglikelihood(X)
             new_loglik = loglik.sum()
+            lfin = time.time()
 
             # Check convergence
             if np.abs(new_loglik - old_loglik) < tol:
