@@ -22,6 +22,7 @@ class MVBetaMM:
         self.verbose = verbose
         self.verbose_interval = verbose_interval
         self.random_state = random_state
+        self.converged = False
     
 
     def _initialize(self, X, init_num):
@@ -267,7 +268,7 @@ class MVBetaMM:
         self.n_observations, self.n_components = X.shape
 
         self.n_jobs = n_jobs
-        self.converged_ = False
+        self.converged = False
         max_lower_bound = -np.inf
         self.method = method if method.lower() in ["kmeans", "random"] else "kmeans"
 
@@ -287,7 +288,7 @@ class MVBetaMM:
 
                 if abs(change) < tol:
                     self.verbose_converged(iter, lower_bound)
-                    self.converged_ = True
+                    self.converged = True
                     break
             
             if lower_bound > max_lower_bound or max_lower_bound == -np.inf:
@@ -304,6 +305,18 @@ class MVBetaMM:
         self.max_lower_bound = max_lower_bound
         
         return self
+    
+
+    def set_verbose(self, verbose, interval):
+        """
+        Update the verbose parameters
+
+        Parameters:
+        - verbose (boolean): If true, prints updates every interval iters
+        - interval (int): Frequency of verbose statements
+        """
+        self.verbose = verbose
+        self.verbose_interval = interval
     
 
     def predict_proba(self, X):
@@ -332,3 +345,40 @@ class MVBetaMM:
         """
         probs = self.predict_proba(X)
         return np.argmax(probs, axis=1)
+    
+
+    def save_model(self, file_path):
+        """
+        Saved the model in h5 format
+
+        Parameters:
+        - file_path (string): Path to the file to create and save to
+        """
+        if self.converged == None:
+            print("Model untrained, nothing to save")
+            return
+        
+        # Saved as one list for simplicity
+        meta_info = [self.n_observations, self.n_components, self.n_mixtures, self.converged]
+        with h5py.File(file_path, "w") as f:
+            f.create_dataset("params", data=self.parmas_)
+            f.create_dataset("weights", data=self.weights_)
+            f.create_dataset("size", data=meta_info)
+
+    
+    def load_model(self, file_path):
+        """
+        Loads a previous model from its h5 file
+
+        Parameters:
+        - file_path (string): Path to the file to restore from
+        """
+        with h5py.File(file_path, "r") as f:
+            self.params_ = f["params"][()]
+            self.weights_ = f["weights"][()]
+            meta_info = f["size"][()]
+
+        self.n_observations = meta_info[0]
+        self.n_components = meta_info[1]
+        self.n_mixtures = meta_info[2]
+        self.converged = meta_info[3]
