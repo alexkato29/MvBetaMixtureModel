@@ -318,6 +318,16 @@ class MVBetaMM:
         """
         self.verbose = verbose
         self.verbose_interval = interval
+
+    
+    def set_jobs(self, n_jobs):
+        """
+        Updates n_jobs
+
+        Parameters:
+        - n_jobs (int): Number of CPUs to use in training
+        """
+        self.n_jobs = n_jobs
     
 
     def predict_proba(self, X):
@@ -350,10 +360,68 @@ class MVBetaMM:
 
     def show_info(self):
         """
-        Shows relevant information about the model. Includes the number of mixtures, training set info, status of model convergence, and
-        the model's size in memory
+        Shows relevant information about the model. Includes the number of mixtures, training set info, and the status of model convergence
         """
         print(self)
+
+
+    def _n_parameters(self):
+        """
+        Returns the number of free parameters in the current model
+        """
+        # Minus 1 since the last weight = 1 - sum(other weights)
+        return int(2 * self.n_components + self.n_mixtures - 1)
+
+    
+    def score_samples(self, X):
+        """
+        Compute the log likelihood of each sample
+
+        Parameters:
+        - X (matrix): Data
+
+        Returns:
+        - log_prob: Log likelihood of each sample under the model
+        """
+
+        return logsumexp(self._estimate_weighted_log_prob(X), axis=1)
+    
+
+    def score(self, X):
+        """
+        Compute average log likelihood over all samples
+
+        Parameters:
+        - X (matrix): Data
+
+        Returns:
+        - avg_log_prob: Average log likelihood over all samples in X
+        """
+        return self.score_samples(X).mean()
+    
+
+    def bic(self, X):
+        """
+        Bayesian information criterion for the current model over the input X
+
+        Parameters:
+        - X (matrix): Data
+
+        Returns:
+        - bic (float): BIC score
+        """
+        return -2 * self.score(X) * X.shape[0] + self._n_parameters() * np.log(X.shape[0])
+
+    def aic(self, X):
+        """Akaike information criterion for the current model over the input X
+
+        Parameters:
+        - X (matrix): Data
+
+        Returns:
+        - aic (float): AIC score
+        """
+        return -2 * self.score(X) * X.shape[0] + 2 * self._n_parameters()
         
 
     def save_model(self, file_path):
@@ -368,7 +436,7 @@ class MVBetaMM:
             return
         
         # Saved as one list for simplicity
-        meta_info = [self.n_observations, self.n_components, self.n_mixtures, self.converged]
+        meta_info = [self.n_observations, self.n_components, self.n_mixtures, self.converged, self.n_jobs]
         with h5py.File(file_path, "w") as f:
             f.create_dataset("params", data=self.params_)
             f.create_dataset("weights", data=self.weights_)
@@ -391,6 +459,7 @@ class MVBetaMM:
         self.n_components = meta_info[1]
         self.n_mixtures = meta_info[2]
         self.converged = bool(meta_info[3])
+        self.n_jobs = meta_info[4]
 
 
     def __str__(self):
