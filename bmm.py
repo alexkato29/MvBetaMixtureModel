@@ -1,3 +1,4 @@
+import sys
 import h5py
 import numpy as np
 from scipy.stats import beta
@@ -347,6 +348,14 @@ class MVBetaMM:
         return np.argmax(probs, axis=1)
     
 
+    def show_info(self):
+        """
+        Shows relevant information about the model. Includes the number of mixtures, training set info, status of model convergence, and
+        the model's size in memory
+        """
+        print(self)
+        
+
     def save_model(self, file_path):
         """
         Saved the model in h5 format
@@ -361,7 +370,7 @@ class MVBetaMM:
         # Saved as one list for simplicity
         meta_info = [self.n_observations, self.n_components, self.n_mixtures, self.converged]
         with h5py.File(file_path, "w") as f:
-            f.create_dataset("params", data=self.parmas_)
+            f.create_dataset("params", data=self.params_)
             f.create_dataset("weights", data=self.weights_)
             f.create_dataset("size", data=meta_info)
 
@@ -381,4 +390,13 @@ class MVBetaMM:
         self.n_observations = meta_info[0]
         self.n_components = meta_info[1]
         self.n_mixtures = meta_info[2]
-        self.converged = meta_info[3]
+        self.converged = bool(meta_info[3])
+
+
+    def __str__(self):
+        return (
+            f"Multivariate Beta Mixture Model w/ {self.n_mixtures} mixtures\n"
+            f"Features per mixture: {self.n_components}\n"
+            f"Trained on a {self.n_observations}x{self.n_components} data matrix\n"
+            f"Converged: {self.converged}"
+        )
