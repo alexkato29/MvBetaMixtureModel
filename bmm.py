@@ -22,13 +22,6 @@ class MVBetaMM:
         self.verbose = verbose
         self.verbose_interval = verbose_interval
         self.random_state = random_state
-        self.n_observations = None
-        self.n_components = None
-        self.converged_ = None
-        self.weights_ = None
-        self.params_ = None
-        self.n_jobs = None
-        self.method = None
     
 
     def _initialize(self, X, init_num):
@@ -82,8 +75,10 @@ class MVBetaMM:
         """
         alpha = self.params_[mix, :self.n_components]
         beta = self.params_[mix, self.n_components:]
+
         # Compute the log of the Beta function for each mixture
         log_beta_fn = betaln(alpha, beta)
+
         # Compute the log probability for each observation for current mixture
         log_prob = ((alpha - 1) * np.log(X) + (beta - 1) * np.log(1 - X) - log_beta_fn).sum(axis=1)
         return log_prob
@@ -99,6 +94,7 @@ class MVBetaMM:
         - log_prob (matrix): Matrix of log probabilities. ij entry is the (unnormalized) log probability that 
                              observation i belongs to mixture j
         """
+        # Don't use parallel computing at all when n_jobs=1. The initialization cost of parallel computing is high even for n_jobs=1
         if self.n_jobs == 1:
             log_prob = np.empty((self.n_observations, self.n_mixtures))
             for mix in range(self.n_mixtures):
@@ -110,6 +106,7 @@ class MVBetaMM:
 
                 # Compute the log probability for each observation for current mixture
                 log_prob[:, mix] = ((alpha - 1) * np.log(X) + (beta - 1) * np.log(1 - X) - log_beta_fn).sum(axis=1)
+
             return log_prob
 
         else:
