@@ -2,7 +2,7 @@
 Multivariate Beta Mixture Model provides a simple implementation of a beta mixture model using the EM algorithm. This is not a Dirichlet mixture model. MvBeta assumes that each mixture is comprised of multiple independent beta distributions, and their results are not constrained to sum to one.
 
 ### Features
-The MvBetaMM object allows for simple training of a mixture model. For example usage, see the demonstration.ipynb notebook. 
+The MvBetaMM object allows for simple training of a mixture model. The model is fit using the EM algorithm. Since there is no closed form solution for alpha and beta, moment matching is used to approximate values of alpha and beta that fit the data arbitrarily well. For example usage, see the demonstration.ipynb notebook. 
 
 ### Installation
 This code doesn't require a special installation process if Python and necessary libraries are already installed. Download the BetaMixture.py file and import the MvBetaMM class in your Python script:
