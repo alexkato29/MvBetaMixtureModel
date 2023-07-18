@@ -1,4 +1,4 @@
-import sys
+import time
 import h5py
 import numpy as np
 from scipy.stats import beta
@@ -238,12 +238,12 @@ class MVBetaMM:
 
     def verbose_initialization(self, n):
         if self.verbose:
-            print(f"New {self.method} initialization. Init Number {n}")
+            print(f"New {self.method} initialization. Init Number {n + 1}")
 
 
-    def verbose_iter(self, iter, lower_bound):
+    def verbose_iter(self, iter, lower_bound, time):
         if self.verbose and iter % self.verbose_interval == 0:
-            print(f"Training Iteration {iter} complete. Best log probability lower bound: {lower_bound}")
+            print(f"Training Iteration {iter} complete. Current log prob lower bound: {lower_bound}. Avg Training Time: {np.round(time / self.verbose_interval, decimals=1)}s")
 
     
     def verbose_converged(self, iter, lower_bound):
@@ -251,7 +251,7 @@ class MVBetaMM:
             print(f"Converged on iteration {iter}. Log probability lower bound: {lower_bound}")
 
 
-    def fit(self, X, n_init=10, method="kmeans", max_iter=100, tol=1e-5, n_jobs=1):
+    def fit(self, X, n_init=10, method="kmeans", max_iter=1000, tol=1e-5, n_jobs=1):
         """
         Fits the parameters and weights of the MVBeta model to maximize the loglikelihood of the model
         given the data X.
@@ -277,15 +277,23 @@ class MVBetaMM:
             self._initialize(X, init)
             lower_bound = -np.inf
 
+            start = time.time()
             for iter in range(max_iter):
                 prev_lower_bound = lower_bound
+                
+                # Used to print average iter duration
+                if iter % self.verbose_interval == 1:
+                    start = time.time()
+
                 log_prob_norm, log_resp = self._e_step(X)
                 self._m_step(X, log_resp)
 
                 lower_bound = log_prob_norm
                 change = lower_bound - prev_lower_bound
 
-                self.verbose_iter(iter, lower_bound)
+                end = time.time()
+
+                self.verbose_iter(iter, lower_bound, end - start)
 
                 if abs(change) < tol:
                     self.verbose_converged(iter, lower_bound)
