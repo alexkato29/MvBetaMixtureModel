@@ -5,6 +5,7 @@ model.h5
 data
 changes.txt
 BetaMixtureGPU.py
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
