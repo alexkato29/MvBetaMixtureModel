@@ -2,6 +2,9 @@
 testcode.ipynb
 bmm_old.py
 model.h5
+data
+changes.txt
+BetaMixtureGPU.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
