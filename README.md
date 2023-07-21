@@ -8,7 +8,7 @@ The MvBetaMM object allows for simple training of a mixture model. The model is 
 This code doesn't require a special installation process if Python and necessary libraries are already installed. Download the BetaMixture.py file and import the MvBetaMM class in your Python script:
 
 ```python
-from BetaMixture.py import MvBetaMM
+from BetaMixture import MvBetaMM
 ```
 
 Required dependencies: NumPy, SciPy, sklearn, Joblib, and h5py. 
