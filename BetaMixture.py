@@ -51,7 +51,7 @@ class MVBetaMM:
         # Compute the weights, alphas, and betas via M step
         self.params_ = np.zeros((self.n_mixtures, self.n_components*2))
         self._m_step(X, np.log(resp))
-        self.verbose_initialization(init_num)
+        self._verbose_initialization(init_num)
 
     
     def _estimate_log_weights(self):
@@ -236,17 +236,17 @@ class MVBetaMM:
             self.params_[i, self.n_components:] = common_factor * (1 - weighted_mean)  # betas
 
 
-    def verbose_initialization(self, n):
+    def _verbose_initialization(self, n):
         if self.verbose:
             print(f"New {self.method} initialization. Init Number {n + 1}")
 
 
-    def verbose_iter(self, iter, lower_bound, time):
+    def _verbose_iter(self, iter, lower_bound, avg_time):
         if self.verbose and iter % self.verbose_interval == 0:
-            print(f"Training Iteration {iter} complete. Current log prob lower bound: {lower_bound}. Avg Training Time: {np.round(time / self.verbose_interval, decimals=1)}s")
+            print(f"Training Iteration {iter} complete. Current log prob lower bound: {lower_bound}. Avg Training Time: {np.round(avg_time, decimals=1)}s")
 
     
-    def verbose_converged(self, iter, lower_bound):
+    def _verbose_converged(self, iter, lower_bound):
         if self.verbose:
             print(f"Converged on iteration {iter}. Log probability lower bound: {lower_bound}")
 
@@ -282,8 +282,9 @@ class MVBetaMM:
                 prev_lower_bound = lower_bound
                 
                 # Used to print average iter duration
-                if iter % self.verbose_interval == 1:
+                if iter % self.verbose_interval == 0:
                     start = time.time()
+                    start_iter = iter
 
                 log_prob_norm, log_resp = self._e_step(X)
                 self._m_step(X, log_resp)
@@ -292,11 +293,12 @@ class MVBetaMM:
                 change = lower_bound - prev_lower_bound
 
                 end = time.time()
+                avg_time = (end - start)/(iter - start_iter + 1)
 
-                self.verbose_iter(iter, lower_bound, end - start)
+                self._verbose_iter(iter, lower_bound, avg_time)
 
                 if abs(change) < tol:
-                    self.verbose_converged(iter, lower_bound)
+                    self._verbose_converged(iter, lower_bound)
                     self.converged = True
                     break
             
